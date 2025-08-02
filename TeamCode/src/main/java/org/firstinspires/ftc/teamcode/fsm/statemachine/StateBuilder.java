@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode.fsm.statemachine;
 
 //statemachine;
@@ -8,7 +7,27 @@ import org.firstinspires.ftc.teamcode.fsm.commands.StateAwareTimedCommand;
 import org.firstinspires.ftc.teamcode.fsm.subsystems.DeliverySubsystem;
 import org.firstinspires.ftc.teamcode.fsm.subsystems.IntakeSubsystem;
 
+/**
+ * Utility class for building a finite state machine (FSM)
+ * consisting of timed robot actions involving intake and delivery subsystems.
+ */
 public class StateBuilder {
+
+    /**
+     * Constructs a looping FSM with four states:
+     * <ul>
+     *     <li>State1: Intake forward for 1 second</li>
+     *     <li>State2: Deliver forward + open servo for 2 seconds</li>
+     *     <li>State3: Intake reverse for 2.5 seconds</li>
+     *     <li>State4: Deliver reverse + open servo for 3 seconds</li>
+     * </ul>
+     * Transitions are manually triggered and loop cyclically.
+     *
+     * @param telemetry telemetry instance for displaying state updates
+     * @param intake intake subsystem
+     * @param delivery delivery subsystem
+     * @return a configured RobotStateMachine instance
+     */
     public static RobotStateMachine buildLoopingFSM(Telemetry telemetry, IntakeSubsystem intake, DeliverySubsystem delivery) {
         RobotStateMachine fsm = new RobotStateMachine();
 

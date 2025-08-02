@@ -14,16 +14,44 @@ import java.util.List;
  * 4. Sequence: 1 → 2 → 3 → 4 → 1 → ...
  */
 public class RobotStateMachine {
+    /**
+     * List of states in the FSM.
+     */
     private final List<RobotState> states = new ArrayList<>();
+
+    /**
+     * Index of the currently active state.
+     */
     private int currentIndex = -1;
+
+    /**
+     * Flag indicating if the current command has finished.
+     */
     private boolean commandEnded = false;
+
+    /**
+     * Time (in ms) when the last command ended.
+     */
     private long commandEndTime = 0;
+
+    /**
+     * Flag indicating if a transition was requested after the command ended.
+     */
     private boolean transitionRequestedAfterTimeout = false;
 
+    /**
+     * Adds a state to the FSM sequence.
+     *
+     * @param state the RobotState to add
+     */
     public void addState(RobotState state) {
         states.add(state);
     }
 
+    /**
+     * Requests a transition to the next state.
+     * Only allowed if the current command has ended.
+     */
     public void triggerNext() {
         // Only allow transition request AFTER command has ended
         if (commandEnded) {
@@ -31,6 +59,10 @@ public class RobotStateMachine {
         }
     }
 
+    /**
+     * Updates the FSM.
+     * Handles command execution, completion, and conditional state transitions.
+     */
     public void update() {
         if (states.isEmpty()) return;
 
@@ -69,6 +101,11 @@ public class RobotStateMachine {
         }
     }
 
+    /**
+     * Returns the name of the currently active state.
+     *
+     * @return state name or "None" if not started
+     */
     public String getCurrentStateName() {
         if (currentIndex >= 0 && currentIndex < states.size()) {
             return states.get(currentIndex).name;
