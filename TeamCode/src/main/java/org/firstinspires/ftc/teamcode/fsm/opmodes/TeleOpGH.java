@@ -39,6 +39,7 @@ public class TeleOpGH extends LinearOpMode {
     IntakeSubsystem intake;
     DeliverySubsystem delivery;
     ElevatorSubsystem elevator;
+    ElevatorSubsystemWithMotionProf elevatorMotionProf;
     RisingEdgeDetector edge = new RisingEdgeDetector();
     RobotStateMachine fsm = null;
     RobotCommandRunner manualRunner = new RobotCommandRunner();
@@ -50,6 +51,7 @@ public class TeleOpGH extends LinearOpMode {
         intake = new IntakeSubsystem(robot);
         delivery = new DeliverySubsystem(robot);
         elevator = new ElevatorSubsystem(hardwareMap);
+        elevatorMotionProf = new ElevatorSubsystemWithMotionProf(hardwareMap);
 
         fr = hardwareMap.get(DcMotorEx.class, "fr");
         fl = hardwareMap.get(DcMotorEx.class, "fl");
@@ -118,11 +120,12 @@ public class TeleOpGH extends LinearOpMode {
             telemetry.update();
 
             moveRobot();
-            moveElevator();
+            moveElevatorPIDF();
+            //moveElevatorWithMotionProf();
         }
     }
 
-    private void moveElevator(){
+    private void moveElevatorPIDF(){
         if (edge.isPressed(gamepad1, "dpad_up")) {
             manualRunner.schedule(new ElevatorCommand(telemetry, elevator, ElevatorCommand.Level.HIGH));
         }
@@ -132,6 +135,19 @@ public class TeleOpGH extends LinearOpMode {
         if (edge.isPressed(gamepad1, "dpad_down")) {
             manualRunner.schedule(new ElevatorCommand(telemetry, elevator, ElevatorCommand.Level.LOW));
         }
+    }
+
+    private void moveElevatorWithMotionProf(){
+        if (edge.isPressed(gamepad1, "dpad_up")) {
+            manualRunner.schedule(new ElevatorCommandWithMotionProf(telemetry, elevatorMotionProf, ElevatorCommandWithMotionProf.Level.HIGH));
+        }
+        if (edge.isPressed(gamepad1, "dpad_left")) {
+            manualRunner.schedule(new ElevatorCommandWithMotionProf(telemetry, elevatorMotionProf, ElevatorCommandWithMotionProf.Level.MID));
+        }
+        if (edge.isPressed(gamepad1, "dpad_down")) {
+            manualRunner.schedule(new ElevatorCommandWithMotionProf(telemetry, elevatorMotionProf, ElevatorCommandWithMotionProf.Level.LOW));
+        }
+        elevatorMotionProf.update();
     }
 
     private void moveRobot() {
