@@ -38,6 +38,7 @@ public class TeleOpGH extends LinearOpMode {
     GHRobot robot = new GHRobot();
     IntakeSubsystem intake;
     DeliverySubsystem delivery;
+    ElevatorSubsystem elevator;
     RisingEdgeDetector edge = new RisingEdgeDetector();
     RobotStateMachine fsm = null;
     RobotCommandRunner manualRunner = new RobotCommandRunner();
@@ -48,6 +49,7 @@ public class TeleOpGH extends LinearOpMode {
         robot.init(hardwareMap);
         intake = new IntakeSubsystem(robot);
         delivery = new DeliverySubsystem(robot);
+        elevator = new ElevatorSubsystem(hardwareMap);
 
         fr = hardwareMap.get(DcMotorEx.class, "fr");
         fl = hardwareMap.get(DcMotorEx.class, "fl");
@@ -114,6 +116,21 @@ public class TeleOpGH extends LinearOpMode {
             telemetry.addData("FSM Current State", fsm.getCurrentStateName());
             telemetry.addData("Manual Commands Running", manualRunner.isBusy());
             telemetry.update();
+
+            moveRobot();
+            moveElevator();
+        }
+    }
+
+    private void moveElevator(){
+        if (edge.isPressed(gamepad1, "dpad_up")) {
+            manualRunner.schedule(new ElevatorCommand(telemetry, elevator, ElevatorCommand.Level.HIGH));
+        }
+        if (edge.isPressed(gamepad1, "dpad_left")) {
+            manualRunner.schedule(new ElevatorCommand(telemetry, elevator, ElevatorCommand.Level.MID));
+        }
+        if (edge.isPressed(gamepad1, "dpad_down")) {
+            manualRunner.schedule(new ElevatorCommand(telemetry, elevator, ElevatorCommand.Level.LOW));
         }
     }
 
