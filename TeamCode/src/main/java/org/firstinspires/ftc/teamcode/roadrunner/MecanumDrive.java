@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
@@ -28,14 +29,14 @@ public class MecanumDrive {
         public double maxAngAccel = Math.PI;     // radians per second squared
 
         // Track width and wheel base (adjust for your robot)
-        public double trackWidth = 16.0;         // inches between left and right wheels
-        public double wheelBase = 16.0;          // inches between front and back wheels
+        public double trackWidth = 10.4;         // inches between left and right wheels
+        public double wheelBase = 10.125;          // inches between front and back wheels
 
         // Wheel radius
-        public double wheelRadius = 1.89;        // inches (96mm goBILDA mecanum wheels)
+        public double wheelRadius = 2.045;        // inches (96mm goBILDA mecanum wheels)
 
         // Motor ticks per revolution (for goBILDA 312 RPM motor)
-        public double ticksPerRev = 537.7;
+        public double ticksPerRev = 145.1;
     }
 
     public final Params params;
@@ -52,6 +53,7 @@ public class MecanumDrive {
     /**
      * Constructor for MecanumDrive
      */
+
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
         this.params = new Params();
 
@@ -62,10 +64,10 @@ public class MecanumDrive {
         rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
 
         // Set motor directions (adjust if your robot moves backward/turns wrong way)
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.FORWARD);
-        rightBack.setDirection(DcMotor.Direction.FORWARD);
+        leftFront.setDirection(DcMotor.Direction.FORWARD);
+        leftBack.setDirection(DcMotor.Direction.FORWARD);
+        rightFront.setDirection(DcMotor.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.REVERSE);
 
         // Set motor modes
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -74,7 +76,7 @@ public class MecanumDrive {
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Initialize IMU
-        imu = hardwareMap.get(IMU.class, "imu");
+        imu = hardwareMap.get(IMU.class, "gyro");
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
                 RevHubOrientationOnRobot.LogoFacingDirection.UP,
                 RevHubOrientationOnRobot.UsbFacingDirection.FORWARD));

@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.roadrunner;
 
+import static java.lang.Math.PI;
+
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.Twist2dDual;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /**
  * SparkFun OTOS Localizer for Roadrunner 1.0.1
@@ -18,8 +22,9 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Constructor for SparkFun OTOS Localizer
+     *
      * @param hardwareMap The robot's hardware map
-     * @param startPose The starting pose of the robot
+     * @param startPose   The starting pose of the robot
      */
     public SparkFunOTOSLocalizer(HardwareMap hardwareMap, Pose2d startPose) {
         // Get OTOS from hardware map
@@ -45,7 +50,9 @@ public class SparkFunOTOSLocalizer {
 
         // Set OTOS offset (adjust these values based on your robot's OTOS mounting position)
         // These values assume OTOS is mounted at center of robot
-        SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(0, 0, 0);
+        // SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(-2.16, -3.38,Math.toRadians(90));
+
+        SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(-2.16, -3.38, PI / 2);
         otos.setOffset(offset);
 
         // Set linear and angular scalars (start with 1.0, tune if needed)
@@ -53,7 +60,7 @@ public class SparkFunOTOSLocalizer {
         otos.setAngularScalar(1.0);
 
         // Calibrate IMU (this may take a few seconds)
-        otos.calibrateImu();
+        otos.calibrateImu(255, true);
 
         // Reset position to origin
         otos.resetTracking();
@@ -61,6 +68,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Update and get the current pose from OTOS sensor
+     *
      * @return The current pose of the robot
      */
     public Pose2d update() {
@@ -79,6 +87,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Set the pose in the OTOS sensor
+     *
      * @param pose The pose to set
      */
     private void setOTOSPose(Pose2d pose) {
@@ -92,6 +101,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Reset the localizer position
+     *
      * @param pose The new pose to reset to
      */
     public void resetPose(Pose2d pose) {
@@ -101,6 +111,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Get the current pose without updating
+     *
      * @return The last known pose
      */
     public Pose2d getCurrentPose() {
@@ -109,6 +120,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Get velocity from OTOS (if needed for advanced applications)
+     *
      * @return The current velocity
      */
     public Vector2d getVelocity() {
@@ -118,6 +130,7 @@ public class SparkFunOTOSLocalizer {
 
     /**
      * Get pose velocity from OTOS
+     *
      * @return The current pose velocity (position + angular)
      */
     public PoseVelocity2d getPoseVelocity() {
