@@ -18,10 +18,10 @@ public class MotorDirectionTest extends LinearOpMode {
     @Override
     public void runOpMode() {
         // Initialize motors
-        leftFront = hardwareMap.get(DcMotor.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotor.class, "leftBack");
-        rightBack = hardwareMap.get(DcMotor.class, "rightBack");
-        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+        leftFront = hardwareMap.get(DcMotor.class, "fl");
+        leftBack = hardwareMap.get(DcMotor.class, "bl");
+        rightBack = hardwareMap.get(DcMotor.class, "br");
+        rightFront = hardwareMap.get(DcMotor.class, "fr");
 
         // Set initial directions (may need adjustment)
         leftFront.setDirection(DcMotor.Direction.REVERSE);
