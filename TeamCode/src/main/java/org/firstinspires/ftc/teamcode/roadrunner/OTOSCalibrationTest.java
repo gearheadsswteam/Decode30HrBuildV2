@@ -35,6 +35,13 @@ public class OTOSCalibrationTest extends LinearOpMode {
             // Initialize OTOS localizer
             localizer = new SparkFunOTOSLocalizer(hardwareMap, new Pose2d(0, 0, 0));
 
+            SparkFunOTOS.Status status = localizer.otos.getStatus();
+            telemetry.addData("OTOS Status", "");
+            telemetry.addData("  Tilt Warning", status.warnTiltAngle);
+            telemetry.addData("  Optical Warning", status.warnOpticalTracking);
+            telemetry.addData("  PAA Error", status.errorPaa);
+            telemetry.addData("  LSM Error", status.errorLsm);
+
 
             telemetry.addData("Status", "OTOS Initialized Successfully!");
             telemetry.addLine() ;
