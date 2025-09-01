@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.roadrunner;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -69,8 +71,10 @@ public class BasicDriveTest extends LinearOpMode {
                     // We'll access motors through drive system later, for now test basic movement
                     // This is a simplified version - the actual movement will be handled by drive actions
 
+
                     // Update pose estimate
                     Pose2d currentPose = drive.updatePoseEstimate();
+                    drive.setDrivePowers(frontLeftPower, backLeftPower, frontRightPower, frontLeftPower );
 
                     // Display telemetry
                     telemetry.addData("Gamepad Input", "");

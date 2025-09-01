@@ -42,7 +42,7 @@ public class MecanumDrive {
     public final Params params;
 
     // Motors
-    private final DcMotorEx leftFront, leftBack, rightBack, rightFront;
+    private final DcMotor leftFront, leftBack, rightBack, rightFront;
 
     // Localizer
     private final SparkFunOTOSLocalizer localizer;
@@ -57,19 +57,19 @@ public class MecanumDrive {
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
         this.params = new Params();
 
-        // Initialize motors with exact hardware map names
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
-        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
+        // Initialize motors
+        leftFront = hardwareMap.get(DcMotor.class, "fl");
+        leftBack = hardwareMap.get(DcMotor.class, "bl");
+        rightBack = hardwareMap.get(DcMotor.class, "br");
+        rightFront = hardwareMap.get(DcMotor.class, "fr");
 
-        // Set motor directions (adjust if your robot moves backward/turns wrong way)
-        leftFront.setDirection(DcMotor.Direction.FORWARD);
-        leftBack.setDirection(DcMotor.Direction.FORWARD);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
-        rightBack.setDirection(DcMotor.Direction.REVERSE);
+        // Set initial directions (may need adjustment)
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        leftBack.setDirection(DcMotor.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.FORWARD);
+        rightBack.setDirection(DcMotor.Direction.FORWARD);
 
-        // Set motor modes
+        // Set brake mode
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -101,6 +101,14 @@ public class MecanumDrive {
         double frontRightPower = (y - x - rx) / denominator;
         double backRightPower = (y + x - rx) / denominator;
 
+        // Set motor powers
+        leftFront.setPower(frontLeftPower);
+        leftBack.setPower(backLeftPower);
+        rightFront.setPower(frontRightPower);
+        rightBack.setPower(backRightPower);
+    }
+
+    public void setDrivePowers(double frontLeftPower, double backLeftPower, double frontRightPower, double backRightPower){
         // Set motor powers
         leftFront.setPower(frontLeftPower);
         leftBack.setPower(backLeftPower);
