@@ -10,6 +10,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 // ✅ ADDED FOR IMU
 import com.qualcomm.hardware.bosch.BNO055IMU;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 /**
@@ -49,7 +53,10 @@ public class SparkFunOTOSLocalizer {
 
     private void configureIMU() { // ✅ ADDED
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.mode = BNO055IMU.SensorMode.IMU;
         parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+
         imu.initialize(parameters);
 
         while (!imu.isGyroCalibrated()) {
@@ -74,7 +81,7 @@ public class SparkFunOTOSLocalizer {
     }
 
     private double getImuHeading() { // ✅ ADDED
-        Orientation angles = imu.getAngularOrientation();
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
         return angles.firstAngle;
     }
 
