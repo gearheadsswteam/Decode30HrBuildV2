@@ -8,18 +8,27 @@ import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+// ✅ ADDED FOR IMU
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
 /**
  * SparkFun OTOS Localizer for Roadrunner 1.0.1
- * FIXED: Rotates OTOS pose by -90 degrees to align with robot-forward frame
+ * ✅ Fallback to Control Hub IMU for heading when OTOS heading is too noisy
  */
 public class SparkFunOTOSLocalizer {
 
     public final SparkFunOTOS otos;
+    public final BNO055IMU imu; // ✅ ADDED
     private Pose2d currentPose;
 
     public SparkFunOTOSLocalizer(HardwareMap hardwareMap, Pose2d startPose) {
         otos = hardwareMap.get(SparkFunOTOS.class, "otos");
+        imu = hardwareMap.get(BNO055IMU.class, "gyro"); // ✅ ADDED
+
         configureOTOS();
+        configureIMU(); // ✅ ADDED
+
         currentPose = startPose;
         setOTOSPose(startPose);
     }
@@ -27,36 +36,46 @@ public class SparkFunOTOSLocalizer {
     private void configureOTOS() {
         otos.resetTracking();
 
-        // Sensor offset (tune as needed based on mounting location)
+        // ✅ You may update this offset based on your mounting
         SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(-2.16, -3.38, PI / 2);
         otos.setOffset(offset);
 
-        // Set scalars (tune if necessary)
         otos.setLinearScalar(1.0);
-        otos.setAngularScalar(1.0);
+        otos.setAngularScalar(0.0); // ✅ CHANGED: Ignore OTOS heading because we use IMU instead
 
-        // Calibrate IMU
         otos.calibrateImu(255, true);
-
         otos.resetTracking();
+    }
+
+    private void configureIMU() { // ✅ ADDED
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        imu.initialize(parameters);
+
+        while (!imu.isGyroCalibrated()) {
+            // Wait until IMU is calibrated
+        }
     }
 
     public Pose2d update() {
         SparkFunOTOS.Pose2D otosPose = otos.getPosition();
 
-        // Rotate OTOS coordinates by -90° to match robot frame
+        // ✅ Rotate OTOS coordinates by -90 degrees
         double cos = Math.cos(-PI / 2);
         double sin = Math.sin(-PI / 2);
 
         double rotatedX = otosPose.x * cos - otosPose.y * sin;
         double rotatedY = otosPose.x * sin + otosPose.y * cos;
-        double rotatedHeading = otosPose.h - PI / 2;
 
-        // Normalize heading to [-π, π]
-        rotatedHeading = Math.atan2(Math.sin(rotatedHeading), Math.cos(rotatedHeading));
+        double imuHeading = getImuHeading(); // ✅ ADDED
 
-        currentPose = new Pose2d(rotatedX, rotatedY, rotatedHeading);
+        currentPose = new Pose2d(rotatedX, rotatedY, imuHeading);
         return currentPose;
+    }
+
+    private double getImuHeading() { // ✅ ADDED
+        Orientation angles = imu.getAngularOrientation();
+        return angles.firstAngle;
     }
 
     private void setOTOSPose(Pose2d pose) {
@@ -98,6 +117,6 @@ public class SparkFunOTOSLocalizer {
         double vx = velocity.x * cos - velocity.y * sin;
         double vy = velocity.x * sin + velocity.y * cos;
 
-        return new PoseVelocity2d(new Vector2d(vx, vy), velocity.h);
+        return new PoseVelocity2d(new Vector2d(vx, vy), 0.0); // ✅ CHANGED: angular velocity = 0
     }
 }
