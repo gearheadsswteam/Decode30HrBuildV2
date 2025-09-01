@@ -40,7 +40,7 @@ public class SparkFunOTOSLocalizer {
         SparkFunOTOS.Pose2D offset = new SparkFunOTOS.Pose2D(-2.16, -3.38, PI / 2);
         otos.setOffset(offset);
 
-        otos.setLinearScalar(1.0);
+        otos.setLinearScalar(48/47.84);
         otos.setAngularScalar(0.0); // ✅ CHANGED: Ignore OTOS heading because we use IMU instead
 
         otos.calibrateImu(255, true);
