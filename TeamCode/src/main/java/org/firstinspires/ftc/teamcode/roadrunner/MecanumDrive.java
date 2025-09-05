@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.roadrunner;
 
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.HolonomicController;
 import com.acmerobotics.roadrunner.MecanumKinematics;
@@ -20,8 +19,6 @@ import com.acmerobotics.roadrunner.TrajectoryBuilderParams;
 import com.acmerobotics.roadrunner.TranslationalVelConstraint;
 import com.acmerobotics.roadrunner.TurnConstraints;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.VelConstraint;
-
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -52,15 +49,15 @@ public final class MecanumDrive {
     private final MotorFeedforward feedforward = new MotorFeedforward(0.0, 1.0, 0.0);
 
     // Controller (tune gains for your robot)
-    private final HolonomicController controller =
+    private HolonomicController controller =
             new HolonomicController(
-                    2.0, 2.0, 4.0,   // positional gains (axial, lateral, heading)
-                    0.0, 0.0, 0.0);  // velocity gains
+                    0.5, 0.5, 0.5,   // positional gains (axial, lateral, heading)
+                    0.15, 0.15, 0.25);  // velocity gains
 
     // Motor power limits - YOUR TUNED VALUES
-    public double maxWheelVel = 50.0;        // inches per second
+    public double maxWheelVel = 30.0;        // inches per second
     public double minProfileAccel = -30.0;   // inches per second squared
-    public double maxProfileAccel = 50.0;    // inches per second squared
+    public double maxProfileAccel = 30.0;    // inches per second squared
 
     // Drive constraints - YOUR TUNED VALUES
     public double maxAngVel = Math.PI;       // radians per second
@@ -108,7 +105,9 @@ public final class MecanumDrive {
 
     // ---------------- Drive Power APIs ----------------
 
-    /** Road Runner style: set drive powers from PoseVelocity2d */
+    /**
+     * Road Runner style: set drive powers from PoseVelocity2d
+     */
     public void setDrivePowers(PoseVelocity2d vel) {
         // FIXED: Remove incorrect Y-flip - OTOS already provides correct coordinates
         // Your OTOS coordinate system: +X = forward, +Y = left, +heading = CCW
@@ -141,7 +140,9 @@ public final class MecanumDrive {
         br.setPower(rb / max);
     }
 
-    /** Direct motor control: raw powers (for TeleOp or test) */
+    /**
+     * Direct motor control: raw powers (for TeleOp or test)
+     */
     public void setDrivePowers(double flPower, double blPower, double frPower, double brPower) {
         fl.setPower(flPower);
         bl.setPower(blPower);
@@ -165,7 +166,7 @@ public final class MecanumDrive {
 
     // ---------------- RR Factories ----------------
     private Action turnAsync(TimeTurn turn) {
-        final double[] start = { -1 };
+        final double[] start = {-1};
 
         return packet -> {
             double now = System.nanoTime() / 1e9;
@@ -207,7 +208,7 @@ public final class MecanumDrive {
     }
 
     private Action followTrajectoryAsync(TimeTrajectory traj) {
-        final double[] start = { -1 };
+        final double[] start = {-1};
 
         return packet -> {
             double now = System.nanoTime() / 1e9;
@@ -245,7 +246,9 @@ public final class MecanumDrive {
         };
     }
 
-    /** Entry point for Road Runner trajectory building */
+    /**
+     * Entry point for Road Runner trajectory building
+     */
     public TrajectoryActionBuilder actionBuilder(Pose2d startPose) {
         return new TrajectoryActionBuilder(
                 this::turnAsync,
@@ -458,4 +461,19 @@ public final class MecanumDrive {
         }
     }
 
+    public void updatePIDGains(double axial, double lateral, double heading,
+                               double axialVel, double lateralVel, double headingVel) {
+        this.controller = new HolonomicController(
+                axial, lateral, heading,
+                axialVel, lateralVel, headingVel
+        );
+    }
+
+    public void updateConstraints(double maxVel, double maxAccel,
+                                  double maxAngVel, double maxAngAccel) {
+        this.maxWheelVel = maxVel;
+        this.maxProfileAccel = maxAccel;
+        this.maxAngVel = maxAngVel;
+        this.maxAngAccel = maxAngAccel;
+    }
 }

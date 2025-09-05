@@ -3,8 +3,9 @@ import android.util.Pair;
 import org.firstinspires.ftc.teamcode.movement.Localizer;
 import org.firstinspires.ftc.teamcode.movement.Pose;
 import org.firstinspires.ftc.teamcode.movement.Twist;
+
 public class OtosLocalizer implements Localizer {
-    private Pose pos = new Pose(0, 0, 0);
+    public Pose pos = new Pose(0, 0, 0);
     private Twist vel = new Twist(0, 0, 0);
     private Otos otos;
     private double lastTime = Double.NaN;
