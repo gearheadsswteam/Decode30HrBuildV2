@@ -18,11 +18,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.teamcode.ValueStorage;
+import org.firstinspires.ftc.teamcode.actionparts.Claw;
+import org.firstinspires.ftc.teamcode.actionparts.Elevator;
+import org.firstinspires.ftc.teamcode.actionparts.Intakesystem;
 import org.firstinspires.ftc.teamcode.robot.GearheadsMecanumRobotRR;
-import org.firstinspires.ftc.teamcode.actionparts.*;
 
 @TeleOp(name = "TeleOpTwoController", group = "TeleOp")
-public class TeleOpRedBlueTwoDriver extends LinearOpMode {
+public class TeleOpRedBlueTwoDriverFSM extends LinearOpMode {
     DcMotorEx fr;
     DcMotorEx fl;
     DcMotorEx br;
@@ -41,8 +43,13 @@ public class TeleOpRedBlueTwoDriver extends LinearOpMode {
     /* Declare OpMode members. */
     private GearheadsMecanumRobotRR robot;   // Use gearheads robot hardware
 
-    //Different action systems used by the Robot
-    private Intakesystem intakesystem;
+    // Subsystems (ADDED)
+    private Intakesystem intakesystem; // will be mapped by motor name "intake"
+    private Claw claw; // will be mapped by servo name "claw"
+    private Elevator elevator; // uses elevatorLeft/elevatorRight internally
+
+    // ADDED: Reusable Timed State Machine instance (subsystems only; driving stays manual)
+    private final TimedStateMachine fsm = new TimedStateMachine();
 
     @Override
     public void runOpMode() {
@@ -75,11 +82,84 @@ public class TeleOpRedBlueTwoDriver extends LinearOpMode {
         bl.setPower(0);
 
         initOpMode();
+        setupFSM();
 
         while (opModeIsActive() && !isStopRequested()) {
             moveRobot();
             operateIntake();
+            // ADDED: FSM controls — X to start, Back to cancel
+            if (gamepad1.back) {
+                fsm.cancel();
+                stopSubsystems();
+            }
+            if (!fsm.isRunning() && gamepad1.x) {
+                fsm.start();
+            }
+
+            // ADDED: Update FSM each loop (controls claw/elevator/intake only)
+            fsm.update();
+
+            // Manual intake still available when FSM idle
+            if (!fsm.isRunning()) {
+                operateIntake();
+            }
+
+            // Telemetry for FSM
+            telemetry.addData("FSM", fsm.isRunning() ? "RUN" : "IDLE");
+            telemetry.addData("Step", "%d/%d", fsm.currentIndex(), fsm.size());
+            telemetry.addData("StateTime", "%.2fs", fsm.stateTime());
+            telemetry.update();
         }
+    }
+
+    // ADDED: One method to define the 4 states you specified
+    private void setupFSM() {
+        final int ELEV_POS_1_TICKS = 250; // TODO: tune
+        final int ELEV_POS_2_TICKS = 1100; // TODO: tune
+        fsm.clear()
+// (1) Intake ON for 5 seconds
+                .add(new TimedStateMachine.Step()
+                        .onStart(() -> {
+                            if (intakesystem != null) intakesystem.startInTake();
+                        })
+                        .maxDurationMS(5000)
+                        .onStop(() -> {
+                            if (intakesystem != null) intakesystem.stopInTake();
+                        })
+                )
+// (2) Elevator -> position 2, Intake STOP, up to 3 seconds (ends early if reached)
+                .add(new TimedStateMachine.Step()
+                        .onStart(() -> {
+                            if (intakesystem != null) intakesystem.stopInTake();
+                            if (elevator != null)
+                                elevator.setTargetPosition(ELEV_POS_2_TICKS, Elevator.POWER_UP);
+                        })
+                        .doneWhen(() -> elevator != null && !elevator.isBusy())
+                        .maxDurationMS(3000)
+                        .onStop(() -> {
+                            if (elevator != null) elevator.stop();
+                        })
+                )
+// (3) Claw CLOSE takes 1 second
+                .add(new TimedStateMachine.Step()
+                        .onStart(() -> {
+                            if (claw != null) claw.close();
+                        })
+                        .maxDurationMS(1000)
+                )
+// (4) Elevator -> position 1 and Claw OPEN, up to 2 seconds (ends early if reached)
+                .add(new TimedStateMachine.Step()
+                        .onStart(() -> {
+                            if (claw != null) claw.open();
+                            if (elevator != null)
+                                elevator.setTargetPosition(ELEV_POS_1_TICKS, Elevator.POWER_DOWN);
+                        })
+                        .doneWhen(() -> elevator != null && !elevator.isBusy())
+                        .maxDurationMS(2000)
+                        .onStop(() -> {
+                            if (elevator != null) elevator.stop();
+                        })
+                );
     }
 
 
@@ -121,7 +201,6 @@ public class TeleOpRedBlueTwoDriver extends LinearOpMode {
     }
 
 
-
     /**
      * Initialize the opmode
      */
@@ -140,8 +219,17 @@ public class TeleOpRedBlueTwoDriver extends LinearOpMode {
          */
         robot.initTeleOp(hardwareMap);
         intakesystem = robot.intakesystem;
+        //TODO Add Elevator
+        //TODO add Claw
+
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
+    }
+
+    // Helper to stop all subsystems when cancelling FSM
+    private void stopSubsystems() {
+        if (intakesystem != null) intakesystem.stopInTake();
+        if (elevator != null) elevator.stop();
     }
 }

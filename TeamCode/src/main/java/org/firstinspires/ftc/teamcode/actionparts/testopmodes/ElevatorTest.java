@@ -3,9 +3,9 @@ package org.firstinspires.ftc.teamcode.actionparts.testopmodes;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.subsystems.Elevator;
+import org.firstinspires.ftc.teamcode.actionparts.Elevator;
 
-@TeleOp(name="Elevator Test", group="Test")
+@TeleOp(name = "Elevator Test", group = "Test")
 public class ElevatorTest extends LinearOpMode {
 
     private Elevator elevator;
