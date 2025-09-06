@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot.LogoFacingDirection;
@@ -88,32 +90,26 @@ public class MecanumAutoAPI {
         this.op = opMode;
         this.params = (p == null) ? new Params() : p;
 
-        fl = hw.get(DcMotorEx.class, flName);
-        fr = hw.get(DcMotorEx.class, frName);
-        bl = hw.get(DcMotorEx.class, blName);
-        br = hw.get(DcMotorEx.class, brName);
+        fr = hw.get(DcMotorEx.class, "fr");
+        fl = hw.get(DcMotorEx.class, "fl");
+        br = hw.get(DcMotorEx.class, "br");
+        bl = hw.get(DcMotorEx.class, "bl");
+        imu = hw.get(BNO055IMU.class, "gyro");
 
-        // Recommended motor directions for typical mecanum (adjust to make +Y forward):
-        fl.setDirection(DcMotorSimple.Direction.REVERSE);
-        fr.setDirection(DcMotorSimple.Direction.FORWARD);
-        bl.setDirection(DcMotorSimple.Direction.REVERSE);
-        br.setDirection(DcMotorSimple.Direction.FORWARD); // left reversed, right forward per user
+        fr.setDirection(DcMotorSimple.Direction.REVERSE);
+        br.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.mode = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        imu.initialize(parameters);
 
         for (DcMotorEx m : new DcMotorEx[]{fl, fr, bl, br}) {
             m.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             m.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
-
-        // Use BNO055IMU with custom parameters (radians for angles)
-        com.qualcomm.hardware.bosch.BNO055IMU gyro = hw.get(com.qualcomm.hardware.bosch.BNO055IMU.class, "imu");
-        com.qualcomm.hardware.bosch.BNO055IMU.Parameters parameters = new com.qualcomm.hardware.bosch.BNO055IMU.Parameters();
-        parameters.mode = com.qualcomm.hardware.bosch.BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit = com.qualcomm.hardware.bosch.BNO055IMU.AngleUnit.RADIANS;
-        parameters.accelUnit = com.qualcomm.hardware.bosch.BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        gyro.initialize(parameters);
-        this.imu = gyro;
-
         COUNTS_PER_INCH = (params.ticksPerMotorRev * params.gearReduction) / (params.wheelDiameterIn * Math.PI);
     }
 
