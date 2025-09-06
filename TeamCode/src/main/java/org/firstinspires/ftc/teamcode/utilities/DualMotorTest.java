@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 
 @TeleOp(name = "MotorTest")
-public class MotorTest extends LinearOpMode {
+public class DualMotorTest extends LinearOpMode {
 
     DcMotor leftMotor;
     DcMotor rightMotor;
