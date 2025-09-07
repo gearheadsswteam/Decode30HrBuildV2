@@ -9,19 +9,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class FlywheelShooterWithRPMControl {
 
-    // --- TUNE THESE ---
-    public static final double TICKS_PER_REV = 537.7; // change to your motor/gearbox
-    public static final double READY_BAND_RPM = 50;   // ± band for "at speed"
-    public static final double RECOVERY_BAND_RPM = 75;
-    public static final double FEED_DELAY_MS = 120;
-    public static final double MIN_SPINUP_MS = 250;
-
-    // PIDF @ 12V (conservative starting point)
-    private static final double kP = 0.0008;
-    private static final double kI = 0.0001;
-    private static final double kD = 0.0000;
-    private static final double kF_base = 0.11; // scaled by 12/voltage each loop
-
     private final DcMotorEx flyA, flyB;
     private final VoltageSensor battery;
     private final ElapsedTime sinceLastShot = new ElapsedTime();
@@ -33,11 +20,10 @@ public class FlywheelShooterWithRPMControl {
         flyA = hw.get(DcMotorEx.class, motorAName);
         flyB = hw.get(DcMotorEx.class, motorBName);
 
-        // Directions: adjust so the contact surfaces both move "forward" along the ball path.
-        // Typical dual-side shooter needs one reversed.
-        // If your balls curve or speed fights each other, flip one direction.
-        flyA.setDirection(DcMotorSimple.Direction.FORWARD);
-        flyB.setDirection(DcMotorSimple.Direction.REVERSE);
+        flyA.setDirection(ShooterTuning.MOTOR_A_REVERSED
+                ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
+        flyB.setDirection(ShooterTuning.MOTOR_B_REVERSED
+                ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
 
         for (DcMotorEx m : new DcMotorEx[]{flyA, flyB}) {
             m.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -50,13 +36,13 @@ public class FlywheelShooterWithRPMControl {
         sinceLastShot.reset();
     }
 
-    /** Call every loop to keep F scaled with battery voltage. */
+    /** Call every loop to keep F scaled with battery voltage and refresh PID. */
     public void applyVoltageCompensatedPIDF() {
-        double v = Math.max(10.0, battery.getVoltage());
-        double kF = kF_base * (12.0 / v);
+        double v = Math.max(10.0, battery.getVoltage()); // guard against very low readings
+        double kF = ShooterTuning.kF_base * (12.0 / v);
         if (Math.abs(kF - lastSetF) > 1e-4) {
-            flyA.setVelocityPIDFCoefficients(kP, kI, kD, kF);
-            flyB.setVelocityPIDFCoefficients(kP, kI, kD, kF);
+            flyA.setVelocityPIDFCoefficients(ShooterTuning.kP, ShooterTuning.kI, ShooterTuning.kD, kF);
+            flyB.setVelocityPIDFCoefficients(ShooterTuning.kP, ShooterTuning.kI, ShooterTuning.kD, kF);
             lastSetF = kF;
         }
     }
@@ -76,20 +62,20 @@ public class FlywheelShooterWithRPMControl {
         return 0.5 * (rpmA + rpmB);
     }
 
-    /** Within band and minimum spin-up time elapsed. */
+    /** True when within ready band and minimum spin-up time elapsed. */
     public boolean isReadyToFire() {
         if (targetRpm <= 0) return false;
-        if (sinceLastShot.milliseconds() < MIN_SPINUP_MS) return false;
-        return Math.abs(getCurrentRpm() - targetRpm) <= READY_BAND_RPM;
+        if (sinceLastShot.milliseconds() < ShooterTuning.MIN_SPINUP_MS) return false;
+        return Math.abs(getCurrentRpm() - targetRpm) <= ShooterTuning.READY_BAND_RPM;
     }
 
-    /** Stricter check after a shot. */
+    /** Stricter check after a shot before allowing next feed. */
     public boolean hasRecoveredSinceShot() {
         if (targetRpm <= 0) return false;
-        return Math.abs(getCurrentRpm() - targetRpm) <= RECOVERY_BAND_RPM;
+        return Math.abs(getCurrentRpm() - targetRpm) <= ShooterTuning.RECOVERY_BAND_RPM;
     }
 
-    /** Call right after feeding one ball. */
+    /** Call right after you feed one ball. */
     public void markShot() {
         sinceLastShot.reset();
     }
@@ -100,6 +86,6 @@ public class FlywheelShooterWithRPMControl {
         flyB.setPower(0);
     }
 
-    private static double rpmToTps(double rpm) { return rpm * TICKS_PER_REV / 60.0; }
-    private static double tpsToRpm(double tps) { return tps * 60.0 / TICKS_PER_REV; }
+    private static double rpmToTps(double rpm) { return rpm * ShooterTuning.TICKS_PER_REV / 60.0; }
+    private static double tpsToRpm(double tps) { return tps * 60.0 / ShooterTuning.TICKS_PER_REV; }
 }
