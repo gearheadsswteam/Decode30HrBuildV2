@@ -83,31 +83,29 @@ public class TeleOpRedBlueTwoDriverFSM extends LinearOpMode {
 
         initOpMode();
         setupFSM();
+        boolean prevX = false;
 
         while (opModeIsActive() && !isStopRequested()) {
             moveRobot();
-            operateIntake();
+
             // ADDED: FSM controls — X to start, Back to cancel
+            boolean xPressed = gamepad1.x && !prevX; // rising edge
+
             if (gamepad1.back) {
                 fsm.cancel();
                 stopSubsystems();
             }
-            if (!fsm.isRunning() && gamepad1.x) {
-                fsm.start();
-            }
 
-            // ADDED: Update FSM each loop (controls claw/elevator/intake only)
+            if (xPressed) {
+                fsm.onTrigger();   // <- exactly matches your rules
+            }
+            prevX = gamepad1.x;
+
             fsm.update();
 
-            // Manual intake still available when FSM idle
-            if (!fsm.isRunning()) {
-                operateIntake();
-            }
-
-            // Telemetry for FSM
             telemetry.addData("FSM", fsm.isRunning() ? "RUN" : "IDLE");
-            telemetry.addData("Step", "%d/%d", fsm.currentIndex(), fsm.size());
-            telemetry.addData("StateTime", "%.2fs", fsm.stateTime());
+            telemetry.addData("Step", "%d / %d", fsm.currentIndex(), fsm.size());
+            telemetry.addData("Awaiting Advance", fsm.isAwaitingAdvance());
             telemetry.update();
         }
     }
