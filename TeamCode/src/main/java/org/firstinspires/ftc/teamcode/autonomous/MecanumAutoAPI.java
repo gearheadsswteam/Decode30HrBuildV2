@@ -172,56 +172,101 @@ public class MecanumAutoAPI {
 
     private void turnIMU(double deltaDeg, double timeoutS) {
         if (!op.opModeIsActive()) return;
-        // Use RUN_WITHOUT_ENCODER for smooth turning
+
+        // Go open-loop for smooth turning
         for (DcMotorEx m : new DcMotorEx[]{fl, fr, bl, br}) m.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        final double start = getHeadingDeg();
+        final double start  = getHeadingDeg();
         final double target = wrapDeg(start + deltaDeg);
-        final ElapsedTime timer = new ElapsedTime();
-        final ElapsedTime onTargetTimer = new ElapsedTime();
-        timer.reset();
-        onTargetTimer.reset();
-        double prevError = angleDiffDeg(target, getHeadingDeg());
-        double integral = 0;
 
-        while (op.opModeIsActive() && timer.seconds() < timeoutS) {
+        // --- Tunables (can move into Params if you like) ---
+        final double nearZoneDeg      = Math.max(params.turnOnTargetDeg * 3.0, 3.0); // where we stop using minTurnPower
+        final double finishErrDeg     = params.turnOnTargetDeg;   // same as before
+        final double finishRateDps    = 5.0;                      // deg/sec threshold to consider "settled"
+        final double taperErrDeg      = 15.0;                     // start tapering power under this error
+        final double iMax             = 50.0;                     // anti-windup clamp on integral term
+        final double dAlpha           = 0.3;                      // derivative low-pass [0..1] (higher = less smoothing)
+
+        ElapsedTime loopTimer   = new ElapsedTime();
+        ElapsedTime settleTimer = new ElapsedTime();
+        loopTimer.reset();
+        settleTimer.reset();
+
+        double prevHeading = getHeadingDeg();
+        double prevError   = angleDiffDeg(target, prevHeading);
+        double dFilt       = 0.0; // filtered derivative
+        double integral    = 0.0;
+
+        while (op.opModeIsActive() && loopTimer.seconds() < timeoutS) {
             double heading = getHeadingDeg();
-            double error = angleDiffDeg(target, heading); // shortest signed path (-180..+180)
-            double dt = 0.02; // approx loop time (~50Hz)
+            double error   = angleDiffDeg(target, heading); // signed shortest path (-180..+180)
+
+            // dt from sleep cadence
+            double dt = 0.02; // assume ~50 Hz
+            // If you want true dt:
+            // double now = loopTimer.milliseconds();
+            // ...track last timestamp and compute dtSeconds...
+
+            // PID terms
             integral += error * dt;
-            double deriv = (error - prevError) / dt;
+            // Anti-windup (simple clamp)
+            if (integral > iMax) integral = iMax;
+            if (integral < -iMax) integral = -iMax;
 
-            double cmd = params.kP * error + params.kI * integral + params.kD * deriv;
-            cmd = clamp(cmd, -params.maxTurnPower, params.maxTurnPower);
+            double dRaw = (error - prevError) / dt;
+            dFilt = dAlpha * dRaw + (1 - dAlpha) * dFilt; // low-pass derivative
 
-            // Ensure we overcome static friction
-            if (Math.abs(cmd) < params.minTurnPower) {
-                cmd = Math.copySign(params.minTurnPower, cmd);
+            // Base command
+            double cmd = params.kP * error + params.kI * integral + params.kD * dFilt;
+
+            // Power taper as we approach target to avoid overshoot
+            double absErr = Math.abs(error);
+            if (absErr < taperErrDeg) {
+                double scale = absErr / taperErrDeg; // 1 -> far, 0 -> on target
+                cmd *= Math.max(0.2, scale);         // keep some authority but taper
             }
 
-            // Positive cmd -> CCW (left). With our motor directions, left turn is +power on left wheels negative on right.
+            // Clamp to max power
+            cmd = clamp(cmd, -params.maxTurnPower, params.maxTurnPower);
+
+            // FAR zone: ensure we overcome static friction
+            if (absErr > nearZoneDeg) {
+                if (Math.abs(cmd) < params.minTurnPower) {
+                    cmd = Math.copySign(params.minTurnPower, cmd);
+                }
+            } else {
+                // NEAR zone: DO NOT enforce minTurnPower; allow very small commands & zero
+                // This is the main anti-wiggle change.
+            }
+
+            // Apply motor powers: +cmd = CCW, -cmd = CW
             fl.setPower(+cmd);
             bl.setPower(+cmd);
             fr.setPower(-cmd);
             br.setPower(-cmd);
 
-            boolean onTarget = Math.abs(error) <= params.turnOnTargetDeg;
-            if (onTarget) {
-                // require remaining within window for a bit to settle
-                if (onTargetTimer.seconds() >= params.turnSettledTimeS) break;
+            // Finish condition: inside error band AND rotation rate small for a short time
+            double rateDps = Math.abs(dFilt); // deg/sec (approx from error derivative)
+            boolean inWindow = (absErr <= finishErrDeg) && (rateDps <= finishRateDps);
+            if (inWindow) {
+                if (settleTimer.seconds() >= params.turnSettledTimeS) break;
             } else {
-                onTargetTimer.reset();
+                settleTimer.reset();
             }
 
-            prevError = error;
-            op.telemetry.addData("Turn", "target %.1f, heading %.1f, err %.2f, cmd %.2f", target, heading, error, cmd);
+            prevError   = error;
+            prevHeading = heading;
+
+            op.telemetry.addData("Turn", "tgt %.1f hdg %.1f err %.2f cmd %.2f rate %.1f",
+                    target, heading, error, cmd, rateDps);
             op.telemetry.update();
             op.sleep(20);
         }
+
         stopAndBrake();
-        // Restore encoder mode
         for (DcMotorEx m : new DcMotorEx[]{fl, fr, bl, br}) m.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
+
 
     private void setRunToPosition(int flT, int frT, int blT, int brT) {
         fl.setTargetPosition(flT);
